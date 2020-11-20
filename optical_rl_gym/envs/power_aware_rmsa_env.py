@@ -485,11 +485,25 @@ def least_loaded_path_first_fit(env: PowerAwareRMSA) -> int:
     return action
 
 def least_OPM_and_OBRM(env: PowerAwareRMSA) -> int:
-    launch_power = range(0, 15)
+    launch_power = range(1, 100)
     for idp, path in enumerate(env.k_shortest_paths[env.service.source, env.service.destination]):
         num_slots = env.get_number_slots(path)
+        for initial_slot in range(0, env.topology.graph['num_spectrum_resources'] - num_slots):
+            if env.is_path_free(path, initial_slot, num_slots):
+                for i in launch_power:
+                    i = db2lin(i) * 1e-3
+                    slots = env.get_number_slots(env.k_shortest_paths[env.service.source, env.service.destination][idp])
+                    osnr = np.mean(propagation(i, 1, 1, env.service.source, env.service.destination,
+                                               env.gnpy_network, env.eqpt_library))
+                    min_osnr = env.k_shortest_paths[env.service.source, env.service.destination][idp].best_modulation[
+                        "minimum_osnr"]
+                    if osnr >= min_osnr:
+                        action = [idp, initial_slot, i]
+                        return action
+                    elif i >= 15:
+                        action = [idp, initial_slot, i]
+                        return action
 
-    return action
 
 class SimpleMatrixObservation(gym.ObservationWrapper):
 
