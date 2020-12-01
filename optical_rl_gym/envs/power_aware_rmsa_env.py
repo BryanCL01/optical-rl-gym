@@ -47,6 +47,7 @@ class PowerAwareRMSA(OpticalNetworkEnv):
         self.bit_rate_provisioned = 0
         self.episode_bit_rate_requested = 0
         self.episode_bit_rate_provisioned = 0
+        self.total_power = 0
 
         self.bit_rate_lower_bound = bit_rate_lower_bound
         self.bit_rate_higher_bound = bit_rate_higher_bound
@@ -112,6 +113,7 @@ class PowerAwareRMSA(OpticalNetworkEnv):
                     self.actions_taken[path, initial_slot] += 1
                     self._add_release(self.service)
                 else:
+                    print("Oeuf")
                     self.service.accepted = False
         else:
             self.service.accepted = False
@@ -159,6 +161,7 @@ class PowerAwareRMSA(OpticalNetworkEnv):
 
         self.bit_rate_requested = 0
         self.bit_rate_provisioned = 0
+        self.total_power = 0
 
         self.topology.graph["available_slots"] = np.ones((self.topology.number_of_edges(), self.num_spectrum_resources),
                                                          dtype=int)
@@ -197,6 +200,7 @@ class PowerAwareRMSA(OpticalNetworkEnv):
             self._update_link_stats(path.node_list[i], path.node_list[i + 1])
         self.topology.graph['running_services'].append(self.service)
         self.service.route = path
+        self.service.launch_power = launch_power  # Add power as a Service
         self.service.launch_power = launch_power
         self.service.initial_slot = initial_slot
         self.service.number_slots = number_slots
@@ -206,6 +210,7 @@ class PowerAwareRMSA(OpticalNetworkEnv):
         self.episode_services_accepted += 1
         self.bit_rate_provisioned += self.service.bit_rate
         self.episode_bit_rate_provisioned += self.service.bit_rate
+        self.total_power += 10 ** (self.service.launch_power / 10)  # store total power in mW
 
     def _release_path(self, service: Service):
         for i in range(len(service.route.node_list) - 1):
@@ -494,14 +499,19 @@ def least_OPM_and_OBRM(env: PowerAwareRMSA) -> int:
                 min_osnr = env.k_shortest_paths[env.service.source, env.service.destination][idp].best_modulation[
                     "minimum_osnr"]
                 osnr = np.mean(propagation(db2lin(1) * 1e-3, 1, 1, env.service.source, env.service.destination,
-                                               env.gnpy_network, env.eqpt_library))
-                launch_power = db2lin((min_osnr - osnr) / 10) * 1e-3
+                                           env.gnpy_network, env.eqpt_library))
+                launch_power = db2lin(min_osnr - osnr) * 1e-3
                 print(launch_power)
                 action = [idp, initial_slot, launch_power]
                 return action
 
-    power = db2lin(5) * 1e-3
-    return [env.topology.graph['k_paths'], env.topology.graph['num_spectrum_resources'], power]
+    min_osnr = env.k_shortest_paths[env.service.source, env.service.destination][idp].best_modulation[
+        "minimum_osnr"]
+    osnr = np.mean(propagation(db2lin(1) * 1e-3, 1, 1, env.service.source, env.service.destination,
+                               env.gnpy_network, env.eqpt_library))
+    launch_power = db2lin((min_osnr - osnr)) * 1e-3
+    action = [idp, initial_slot, launch_power]
+    return action
 
 
 class SimpleMatrixObservation(gym.ObservationWrapper):
