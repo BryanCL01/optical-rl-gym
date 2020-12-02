@@ -491,28 +491,28 @@ def least_loaded_path_first_fit(env: PowerAwareRMSA) -> int:
     return action
 
 
-def least_OPM_and_OBRM(env: PowerAwareRMSA) -> int:
-    for idp, path in enumerate(env.k_shortest_paths[env.service.source, env.service.destination]):
-        num_slots = env.get_number_slots(path)
-        for initial_slot in range(0, env.topology.graph['num_spectrum_resources'] - num_slots):
-            if env.is_path_free(path, initial_slot, num_slots):
-                min_osnr = env.k_shortest_paths[env.service.source, env.service.destination][idp].best_modulation[
-                    "minimum_osnr"]
-                osnr = np.mean(propagation(db2lin(0) * 1e-3, 1, 1, env.service.source, env.service.destination,
-                                           env.gnpy_network, env.eqpt_library))
-                launch_power = db2lin(min_osnr - osnr) * 1e-3
-                print(launch_power)
-                action = [idp, initial_slot, launch_power]
-                return action
-
-    min_osnr = env.k_shortest_paths[env.service.source, env.service.destination][idp].best_modulation[
-        "minimum_osnr"]
-    osnr = np.mean(propagation(db2lin(0) * 1e-3, 1, 1, env.service.source, env.service.destination,
-                               env.gnpy_network, env.eqpt_library))
-    launch_power = db2lin((min_osnr - osnr)) * 1e-3
-    print(launch_power)
-    action = [idp, initial_slot, launch_power]
-    return action
+# def least_OPM_and_OBRM(env: PowerAwareRMSA) -> int:
+#     for idp, path in enumerate(env.k_shortest_paths[env.service.source, env.service.destination]):
+#         num_slots = env.get_number_slots(path)
+#         for initial_slot in range(0, env.topology.graph['num_spectrum_resources'] - num_slots):
+#             if env.is_path_free(path, initial_slot, num_slots):
+#                 min_osnr = env.k_shortest_paths[env.service.source, env.service.destination][idp].best_modulation[
+#                     "minimum_osnr"]
+#                 osnr = np.mean(propagation(db2lin(0) * 1e-3, 1, 1, env.service.source, env.service.destination,
+#                                            env.gnpy_network, env.eqpt_library))
+#                 launch_power = db2lin(min_osnr - osnr) * 1e-3
+#                 print(launch_power)
+#                 action = [idp, initial_slot, launch_power]
+#                 return action
+#
+#     min_osnr = env.k_shortest_paths[env.service.source, env.service.destination][idp].best_modulation[
+#         "minimum_osnr"]
+#     osnr = np.mean(propagation(db2lin(0) * 1e-3, 1, 1, env.service.source, env.service.destination,
+#                                env.gnpy_network, env.eqpt_library))
+#     launch_power = db2lin((min_osnr - osnr)) * 1e-3
+#     print(launch_power)
+#     action = [idp, initial_slot, launch_power]
+#     return action
 
 
 class SimpleMatrixObservation(gym.ObservationWrapper):
